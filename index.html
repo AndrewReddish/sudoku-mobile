@@ -533,6 +533,26 @@ html, body {
   background: var(--btn-bg);
 }
 
+.btn-hint {
+  flex: 1;
+  padding: 10px;
+  background: #1976d2;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 1px 3px var(--numpad-btn-shadow);
+  min-height: 44px;
+}
+.btn-hint:active { transform: scale(0.95); background: #1565c0; }
+.btn-hint:disabled { background: var(--numpad-btn); color: var(--text-secondary); opacity: 0.6; cursor: default; }
+.btn-hint:disabled:active { transform: none; }
+
+.hint-remaining { color: var(--text-secondary); font-size: 14px; margin: 4px 0 12px; }
+
 /* ========== Completion Modal ========== */
 
 .modal-overlay {
@@ -1392,7 +1412,19 @@ body.shaking { animation: screen-shake 0.5s ease; }
     <div class="numpad" id="numpad"></div>
     <div class="bottom-row">
       <button class="btn-delete" id="btn-delete">Delete</button>
+      <button class="btn-hint" id="btn-hint" disabled>Hint</button>
     </div>
+  </div>
+</div>
+
+<!-- ========== Hint Confirmation Modal ========== -->
+<div class="modal-overlay" id="modal-hint-confirm">
+  <div class="modal animate">
+    <h2>Use Hint?</h2>
+    <p>Reveal this cell for <strong id="hint-confirm-cost">0</strong> coins?</p>
+    <p class="hint-remaining" id="hint-confirm-remaining">5 hints remaining</p>
+    <button class="btn-play" id="btn-hint-yes" style="width:100%;margin-bottom:8px">Reveal</button>
+    <button class="btn-back-to-menu" id="btn-hint-no" style="width:100%">Cancel</button>
   </div>
 </div>
 
@@ -1474,6 +1506,8 @@ const STORAGE_KEY = 'sudoku_save';
 // ==================== CASINO CONSTANTS ====================
 const COIN_BASE = { 0: 5, 1: 10, 2: 25, 3: 50, 4: 100 };
 const COIN_PAR = { 0: 180, 1: 300, 2: 600, 3: 900, 4: 1200 };
+const HINT_COST = { 0: 5, 1: 10, 2: 20, 3: 35, 4: 50 };
+const MAX_HINTS = 5;
 
 const SPIN_SEGMENTS = [
   { label: '10', type: 'coins', value: 10, color: '#4caf50' },
@@ -1969,6 +2003,7 @@ class GameEngine {
     this.historyIndex = -1;
     this.timerSeconds = 0;
     this.completed = false;
+    this.hintsUsed = 0;
 
     for (let i = 0; i < 81; i++) {
       const val = parseInt(this.puzzleString[i]);
@@ -1987,6 +2022,7 @@ class GameEngine {
     const engine = Object.create(GameEngine.prototype);
     Object.assign(engine, data);
     engine.selectedCells = new Set(data.selectedCells || []);
+    if (engine.hintsUsed === undefined) engine.hintsUsed = 0;
     return engine;
   }
 
@@ -2002,7 +2038,8 @@ class GameEngine {
       history: this.history,
       historyIndex: this.historyIndex,
       timerSeconds: this.timerSeconds,
-      completed: this.completed
+      completed: this.completed,
+      hintsUsed: this.hintsUsed
     };
   }
 
@@ -2321,6 +2358,7 @@ class App {
         this.engine.selectedCells = new Set([idx]);
       }
       this.renderGrid();
+      this.updateHintButton();
     };
 
     let handledByPointer = false;
@@ -2381,6 +2419,7 @@ class App {
       if (this.engine.undo()) {
         this.renderGrid();
         this.updateHistoryBtns();
+        this.updateHintButton();
         this.autoSave();
       }
     });
@@ -2390,8 +2429,51 @@ class App {
       if (this.engine.redo()) {
         this.renderGrid();
         this.updateHistoryBtns();
+        this.updateHintButton();
         this.autoSave();
       }
+    });
+
+    // Hint button
+    document.getElementById('btn-hint').addEventListener('click', () => {
+      if (!this.engine || this.engine.completed) return;
+      const idx = this.engine.selectedCells.size === 1 ? [...this.engine.selectedCells][0] : -1;
+      if (idx < 0) return;
+      const cell = this.engine.cells[idx];
+      if (cell.given || cell.value === parseInt(this.engine.solutionString[idx])) return;
+      const cost = HINT_COST[this.engine.difficulty] || 10;
+      document.getElementById('hint-confirm-cost').textContent = cost;
+      document.getElementById('hint-confirm-remaining').textContent = (MAX_HINTS - this.engine.hintsUsed) + ' hints remaining';
+      document.getElementById('modal-hint-confirm').classList.add('active');
+    });
+
+    document.getElementById('btn-hint-yes').addEventListener('click', () => {
+      document.getElementById('modal-hint-confirm').classList.remove('active');
+      if (!this.engine) return;
+      const idx = this.engine.selectedCells.size === 1 ? [...this.engine.selectedCells][0] : -1;
+      if (idx < 0) return;
+      const cell = this.engine.cells[idx];
+      const cost = HINT_COST[this.engine.difficulty] || 10;
+      const data = Storage.getSaveData();
+      if (data.coins < cost || this.engine.hintsUsed >= MAX_HINTS) return;
+      data.coins -= cost;
+      Storage.save(data);
+      this.engine.saveSnapshot();
+      cell.value = parseInt(this.engine.solutionString[idx]);
+      cell.cornerMarks = [];
+      cell.centreMarks = [];
+      this.engine.hintsUsed++;
+      Storage.saveGame(this.engine);
+      this.renderGrid();
+      this.updateHistoryBtns();
+      this.updateNumpadCounts();
+      this.updateHintButton();
+      this.updateCoinDisplay();
+      if (this.engine.checkCompletion()) this.onComplete();
+    });
+
+    document.getElementById('btn-hint-no').addEventListener('click', () => {
+      document.getElementById('modal-hint-confirm').classList.remove('active');
     });
 
     document.getElementById('btn-back-game').addEventListener('click', () => {
@@ -2584,6 +2666,7 @@ class App {
     this.renderGrid();
     this.updateHistoryBtns();
     this.updateNumpadCounts();
+    this.updateHintButton();
     this.autoSave();
 
     if (this.engine.inputMode === 'normal' && this.engine.checkCompletion()) {
@@ -2613,6 +2696,7 @@ class App {
     this.renderGrid();
     this.updateHistoryBtns();
     this.updateNumpadCounts();
+    this.updateHintButton();
     this.startTimer();
     this.updateCoinDisplay();
 
@@ -2841,6 +2925,31 @@ class App {
     const bal = data.coins || 0;
     document.getElementById('coin-balance-select').textContent = bal;
     document.getElementById('coin-balance-game').textContent = bal;
+  }
+
+  updateHintButton() {
+    const btn = document.getElementById('btn-hint');
+    if (!this.engine || this.engine.completed) {
+      btn.disabled = true;
+      btn.textContent = 'Hint';
+      return;
+    }
+    const cost = HINT_COST[this.engine.difficulty] || 10;
+    const remaining = MAX_HINTS - this.engine.hintsUsed;
+    const data = Storage.getSaveData();
+    const coins = data.coins || 0;
+
+    let canUse = remaining > 0 && coins >= cost;
+    if (canUse && this.engine.selectedCells.size === 1) {
+      const idx = [...this.engine.selectedCells][0];
+      const cell = this.engine.cells[idx];
+      if (cell.given || cell.value === parseInt(this.engine.solutionString[idx])) canUse = false;
+    } else {
+      canUse = false;
+    }
+
+    btn.disabled = !canUse;
+    btn.textContent = 'Hint (' + cost + '\u{1FA99}) · ' + remaining + ' left';
   }
 
   showScreen(name) {
