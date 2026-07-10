@@ -2196,7 +2196,8 @@ class Storage {
       unlockedAchievements: [],
       pendingJackpots: []
     };
-    if (!data.stats) data.stats = { 1: { count: 0, best: null }, 2: { count: 0, best: null }, 3: { count: 0, best: null }, 4: { count: 0, best: null } };
+    if (!data.stats) data.stats = { 0: { count: 0, best: null }, 1: { count: 0, best: null }, 2: { count: 0, best: null }, 3: { count: 0, best: null }, 4: { count: 0, best: null } };
+    for (let d = 0; d <= 4; d++) { if (!data.stats[d]) data.stats[d] = { count: 0, best: null }; }
     if (!data.completedPuzzles) data.completedPuzzles = [];
     if (data.version !== 2) {
       if (data.coins === undefined) data.coins = 0;
