@@ -619,6 +619,646 @@ html, body {
   100% { transform: scale(1); opacity: 1; }
 }
 .modal.animate { animation: celebrate 0.3s ease-out; }
+
+/* ========== Casino Gamification ========== */
+
+:root {
+  --coin-gold: #FFD700;
+  --coin-dark: #B8860B;
+  --coin-text: #8B6914;
+  --streak-flame: #FF6B35;
+  --scratch-bronze: #CD7F32;
+  --scratch-silver: #C0C0C0;
+  --scratch-gold: #FFD700;
+  --jackpot-glow: rgba(255, 215, 0, 0.4);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --coin-gold: #FFC107;
+    --coin-dark: #FF8F00;
+    --coin-text: #FFD54F;
+    --jackpot-glow: rgba(255, 193, 7, 0.3);
+  }
+}
+
+/* Coin Display */
+.coin-display {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--coin-text);
+}
+
+.coin-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--coin-gold), var(--coin-dark));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+
+.coin-display-mini {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--coin-text);
+}
+
+.coin-display-mini .coin-icon {
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+}
+
+/* Streak Display */
+.streak-card {
+  background: var(--bg-card);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  display: none;
+  align-items: center;
+  gap: 12px;
+}
+
+.streak-card.visible { display: flex; }
+
+.streak-flame {
+  font-size: 28px;
+  line-height: 1;
+  animation: flame-flicker 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes flame-flicker {
+  0% { transform: scale(1) rotate(-3deg); }
+  100% { transform: scale(1.1) rotate(3deg); }
+}
+
+.streak-info {
+  flex: 1;
+}
+
+.streak-count {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.streak-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.multiplier-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #ff6b35, #f44336);
+}
+
+.multiplier-badge.x1 { background: #4caf50; }
+.multiplier-badge.x1-5 { background: #ff9800; }
+.multiplier-badge.x2 { background: #f44336; }
+.multiplier-badge.x3 { background: linear-gradient(135deg, #9c27b0, #e040fb); }
+
+/* Daily Spin Button */
+.btn-daily-spin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--coin-gold), #FF8F00);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+  margin-bottom: 12px;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-daily-spin:active { transform: scale(0.97); }
+
+.btn-daily-spin.used {
+  background: var(--btn-bg);
+  color: var(--text-secondary);
+  box-shadow: none;
+  cursor: default;
+}
+
+.btn-daily-spin.available::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%);
+  animation: shimmer 2.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { transform: translateX(-100%) translateY(-100%); }
+  100% { transform: translateX(100%) translateY(100%); }
+}
+
+/* Achievements Button */
+.btn-achievements {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 2px solid var(--btn-bg);
+  border-radius: 12px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  margin-bottom: 12px;
+}
+
+.btn-achievements:active { transform: scale(0.97); }
+
+/* Spin Wheel Modal */
+.spin-wheel-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.spin-pointer {
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-top: 24px solid var(--coin-gold);
+  z-index: 2;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  margin-bottom: -6px;
+}
+
+#spin-canvas {
+  transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+  border-radius: 50%;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.spin-result {
+  margin-top: 16px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--coin-gold);
+  text-align: center;
+  display: none;
+}
+
+.spin-result.visible { display: block; }
+
+.btn-spin {
+  margin-top: 16px;
+  padding: 14px 48px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--coin-gold), #FF8F00);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: 0 3px 12px rgba(255, 152, 0, 0.4);
+}
+
+.btn-spin:active { transform: scale(0.95); }
+
+.btn-spin-collect {
+  margin-top: 12px;
+  padding: 12px 40px;
+  border: none;
+  border-radius: 10px;
+  background: var(--btn-active-bg);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: none;
+}
+
+.btn-spin-collect.visible { display: inline-block; }
+
+/* Scratch Card Modal */
+.scratch-modal-content {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  text-align: center;
+  max-width: 340px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.scratch-modal-content h2 {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.scratch-tier-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+.scratch-tier-label.bronze { color: var(--scratch-bronze); }
+.scratch-tier-label.silver { color: var(--scratch-silver); }
+.scratch-tier-label.gold { color: var(--scratch-gold); }
+
+.scratch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  max-width: 264px;
+  margin: 0 auto 16px;
+}
+
+.scratch-cell {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid var(--border-thin);
+}
+
+.scratch-symbol {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  background: var(--bg-cell);
+}
+
+.scratch-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.scratch-cell.revealed .scratch-canvas { display: none; }
+.scratch-cell.revealed .scratch-symbol { animation: scratch-reveal 0.3s ease-out; }
+.scratch-cell.matched .scratch-symbol { background: rgba(255, 215, 0, 0.15); }
+
+@keyframes scratch-reveal {
+  0% { transform: scale(0.5); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.scratch-hint {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.scratch-result {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  display: none;
+}
+
+.scratch-result.visible { display: block; }
+.scratch-result.win { color: var(--coin-gold); }
+.scratch-result.lose { color: var(--text-secondary); }
+
+.btn-scratch-collect {
+  padding: 12px 40px;
+  border: none;
+  border-radius: 10px;
+  background: var(--btn-active-bg);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  display: none;
+}
+
+.btn-scratch-collect.visible { display: inline-block; }
+
+/* Jackpot Modal */
+.jackpot-container {
+  background: linear-gradient(180deg, #1a1a2e, #16213e);
+  border-radius: 16px;
+  padding: 32px 24px;
+  text-align: center;
+  max-width: 320px;
+  width: 100%;
+  box-shadow: 0 0 40px var(--jackpot-glow), 0 8px 32px rgba(0,0,0,0.4);
+  position: relative;
+  overflow: hidden;
+}
+
+.jackpot-title {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--coin-gold);
+  text-shadow: 0 0 20px var(--jackpot-glow);
+  animation: jackpot-pulse 0.5s ease-in-out infinite alternate;
+  margin-bottom: 16px;
+}
+
+@keyframes jackpot-pulse {
+  0% { transform: scale(1); text-shadow: 0 0 20px var(--jackpot-glow); }
+  100% { transform: scale(1.05); text-shadow: 0 0 40px var(--jackpot-glow); }
+}
+
+.slot-reels {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.slot-reel {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  background: #0d1117;
+  border: 2px solid var(--coin-gold);
+  overflow: hidden;
+  position: relative;
+}
+
+.slot-strip {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  flex-direction: column;
+  transition: transform 2s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+.slot-reel:nth-child(2) .slot-strip { transition-duration: 2.5s; }
+.slot-reel:nth-child(3) .slot-strip { transition-duration: 3s; }
+
+.slot-item {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.jackpot-achievement {
+  color: #fff;
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.jackpot-desc {
+  color: #aaa;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.jackpot-coins {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--coin-gold);
+  margin-bottom: 20px;
+}
+
+.btn-jackpot-collect {
+  padding: 14px 48px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--coin-gold), #FF8F00);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.btn-jackpot-collect:active { transform: scale(0.95); }
+
+/* Achievement List Modal */
+.achievements-content {
+  background: var(--bg-card);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 360px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+}
+
+.achievements-content h2 {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 20px;
+}
+
+.achievement-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border-thin);
+}
+
+.achievement-item:last-child { border-bottom: none; }
+
+.achievement-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  background: var(--btn-bg);
+  flex-shrink: 0;
+}
+
+.achievement-item.unlocked .achievement-icon {
+  background: linear-gradient(135deg, var(--coin-gold), #FF8F00);
+}
+
+.achievement-item.locked {
+  opacity: 0.5;
+}
+
+.achievement-details {
+  flex: 1;
+}
+
+.achievement-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.achievement-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.achievement-reward {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--coin-text);
+  white-space: nowrap;
+}
+
+.btn-achievements-close {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  touch-action: manipulation;
+  margin-top: 16px;
+}
+
+/* Completion Modal Coin Display */
+.modal-earnings {
+  margin: 12px 0;
+  padding: 12px;
+  background: var(--bg-app);
+  border-radius: 10px;
+}
+
+.earning-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+
+.earning-row.total {
+  border-top: 1px solid var(--border-thin);
+  margin-top: 6px;
+  padding-top: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--coin-text);
+}
+
+.earning-value {
+  font-weight: 600;
+  color: var(--coin-text);
+}
+
+/* Flying Coin Animation */
+.flying-coin {
+  position: fixed;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--coin-gold), var(--coin-dark));
+  z-index: 200;
+  pointer-events: none;
+  animation: coin-fly var(--fly-duration, 0.8s) ease-in forwards;
+}
+
+@keyframes coin-fly {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(calc(var(--fly-dx, 0) * 0.5), calc(var(--fly-dy, 0) * 0.5 - 40px)) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--fly-dx, 0), var(--fly-dy, 0)) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Particle Burst */
+.particle {
+  position: fixed;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  z-index: 200;
+  pointer-events: none;
+  animation: particle-burst var(--p-duration, 1s) ease-out forwards;
+}
+
+@keyframes particle-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--p-dx, 0), var(--p-dy, 0)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Screen Shake */
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-4px, 2px); }
+  20% { transform: translate(4px, -2px); }
+  30% { transform: translate(-3px, -3px); }
+  40% { transform: translate(3px, 3px); }
+  50% { transform: translate(-2px, 1px); }
+  60% { transform: translate(2px, -1px); }
+  70% { transform: translate(-1px, 2px); }
+  80% { transform: translate(1px, -2px); }
+  90% { transform: translate(-1px, -1px); }
+}
+
+body.shaking { animation: screen-shake 0.5s ease; }
 </style>
 </head>
 <body>
@@ -628,8 +1268,25 @@ html, body {
   <div class="select-header">
     <h1>Sudoku</h1>
     <p>Choose your challenge</p>
+    <div class="coin-display" id="coin-display-select">
+      <span class="coin-icon">$</span>
+      <span id="coin-balance-select">0</span>
+    </div>
   </div>
   <div class="difficulty-list">
+    <div class="streak-card" id="streak-card">
+      <span class="streak-flame">&#128293;</span>
+      <div class="streak-info">
+        <div class="streak-count" id="streak-count">0 day streak</div>
+        <div class="streak-label">Keep playing daily!</div>
+      </div>
+      <span class="multiplier-badge" id="multiplier-badge">1x</span>
+    </div>
+
+    <button class="btn-daily-spin" id="btn-daily-spin">&#127921; Daily Spin</button>
+
+    <button class="btn-achievements" id="btn-achievements">&#127942; Achievements</button>
+
     <div class="continue-card" id="continue-card">
       <div class="continue-info">
         <span id="continue-diff"></span>
@@ -693,6 +1350,7 @@ html, body {
   <div class="game-header">
     <button class="btn-back" id="btn-back-game">&larr; Back</button>
     <div class="game-info">
+      <span class="coin-display-mini" id="coin-display-game"><span class="coin-icon">$</span><span id="coin-balance-game">0</span></span>
       <span class="difficulty-label" id="game-diff-label"></span>
       <span class="timer" id="timer">00:00</span>
     </div>
@@ -726,8 +1384,63 @@ html, body {
     <h2>Puzzle Complete!</h2>
     <div class="completion-time" id="modal-time">00:00</div>
     <p id="modal-message">Great job!</p>
+    <div class="modal-earnings" id="modal-earnings">
+      <div class="earning-row"><span>Puzzle reward</span><span class="earning-value" id="earn-base">+0</span></div>
+      <div class="earning-row"><span>Time bonus</span><span class="earning-value" id="earn-time">+0</span></div>
+      <div class="earning-row"><span>Streak multiplier</span><span class="earning-value" id="earn-mult">1x</span></div>
+      <div class="earning-row"><span>Scratch card</span><span class="earning-value" id="earn-scratch">+0</span></div>
+      <div class="earning-row total"><span>Total earned</span><span class="earning-value" id="earn-total">+0</span></div>
+    </div>
     <button class="btn-new-game" id="btn-next-puzzle">Next Puzzle</button>
     <button class="btn-back-to-menu" id="btn-modal-menu">Back to Menu</button>
+  </div>
+</div>
+
+<!-- ========== Spin Wheel Modal ========== -->
+<div class="modal-overlay" id="modal-spin">
+  <div class="spin-wheel-container">
+    <div class="spin-pointer"></div>
+    <canvas id="spin-canvas" width="280" height="280"></canvas>
+    <div class="spin-result" id="spin-result"></div>
+    <button class="btn-spin" id="btn-spin">SPIN!</button>
+    <button class="btn-spin-collect" id="btn-spin-collect">Collect</button>
+  </div>
+</div>
+
+<!-- ========== Scratch Card Modal ========== -->
+<div class="modal-overlay" id="modal-scratch">
+  <div class="scratch-modal-content">
+    <h2>Scratch Card!</h2>
+    <div class="scratch-tier-label" id="scratch-tier-label">BRONZE</div>
+    <div class="scratch-grid" id="scratch-grid"></div>
+    <div class="scratch-hint" id="scratch-hint">Scratch to reveal! Match 3 to win!</div>
+    <div class="scratch-result" id="scratch-result"></div>
+    <button class="btn-scratch-collect" id="btn-scratch-collect">Collect</button>
+  </div>
+</div>
+
+<!-- ========== Jackpot Modal ========== -->
+<div class="modal-overlay" id="modal-jackpot">
+  <div class="jackpot-container">
+    <div class="jackpot-title">JACKPOT!</div>
+    <div class="slot-reels" id="slot-reels">
+      <div class="slot-reel"><div class="slot-strip" id="slot-strip-0"></div></div>
+      <div class="slot-reel"><div class="slot-strip" id="slot-strip-1"></div></div>
+      <div class="slot-reel"><div class="slot-strip" id="slot-strip-2"></div></div>
+    </div>
+    <div class="jackpot-achievement" id="jackpot-name"></div>
+    <div class="jackpot-desc" id="jackpot-desc"></div>
+    <div class="jackpot-coins" id="jackpot-coins"></div>
+    <button class="btn-jackpot-collect" id="btn-jackpot-collect">Collect!</button>
+  </div>
+</div>
+
+<!-- ========== Achievements Modal ========== -->
+<div class="modal-overlay" id="modal-achievements">
+  <div class="achievements-content">
+    <h2>&#127942; Achievements</h2>
+    <div id="achievements-list"></div>
+    <button class="btn-achievements-close" id="btn-achievements-close">Close</button>
   </div>
 </div>
 
@@ -739,6 +1452,489 @@ const PUZZLES = [{"id":"e001","d":1,"p":"009063458300205060000981000230400890007
 const DIFF_NAMES = { 1: 'Easy', 2: 'Medium', 3: 'Hard', 4: 'Expert' };
 const DIFF_CLASSES = { 1: 'easy', 2: 'medium', 3: 'hard', 4: 'expert' };
 const STORAGE_KEY = 'sudoku_save';
+
+// ==================== CASINO CONSTANTS ====================
+const COIN_BASE = { 1: 10, 2: 25, 3: 50, 4: 100 };
+const COIN_PAR = { 1: 300, 2: 600, 3: 900, 4: 1200 };
+
+const SPIN_SEGMENTS = [
+  { label: '10', type: 'coins', value: 10, color: '#4caf50' },
+  { label: '25', type: 'coins', value: 25, color: '#2196f3' },
+  { label: '50', type: 'coins', value: 50, color: '#ff9800' },
+  { label: '100', type: 'coins', value: 100, color: '#f44336' },
+  { label: '5', type: 'coins', value: 5, color: '#78909c' },
+  { label: '2x Boost', type: 'multiplier_boost', value: 2, color: '#9c27b0' },
+  { label: 'Shield', type: 'streak_shield', value: 1, color: '#00bcd4' },
+  { label: '75', type: 'coins', value: 75, color: '#ff5722' }
+];
+
+const SCRATCH_TIERS = {
+  bronze: { symbols: ['\u{1F352}', '\u{1F34B}', '\u{1F514}', '\u{1F4B0}'], payout: 15, weight: 70, name: 'BRONZE' },
+  silver: { symbols: ['\u{1F48E}', '\u{0037}\u{FE0F}\u{20E3}', '\u{2B50}', '\u{1F451}'], payout: 50, weight: 25, name: 'SILVER' },
+  gold:   { symbols: ['\u{1F3B0}', '\u{1F48E}', '\u{1F3C6}', '\u{1F48D}'], payout: 150, weight: 5, name: 'GOLD' }
+};
+
+const ACHIEVEMENTS = [
+  { id: 'first_puzzle', name: 'First Steps', desc: 'Complete your first puzzle', coins: 50, icon: '\u{1F476}',
+    check: (d) => d.completedPuzzles.length >= 1 },
+  { id: 'ten_puzzles', name: 'Getting Serious', desc: 'Complete 10 puzzles', coins: 100, icon: '\u{1F4AA}',
+    check: (d) => d.completedPuzzles.length >= 10 },
+  { id: 'fifty_puzzles', name: 'Half Century', desc: 'Complete 50 puzzles', coins: 500, icon: '\u{1F3AF}',
+    check: (d) => d.completedPuzzles.length >= 50 },
+  { id: 'all_puzzles', name: 'Grand Master', desc: 'Complete all 200 puzzles', coins: 2000, icon: '\u{1F451}',
+    check: (d) => d.completedPuzzles.length >= 200 },
+  { id: 'first_expert', name: 'Expert Debut', desc: 'Complete an Expert puzzle', coins: 200, icon: '\u{1F9E0}',
+    check: (d) => d.completedPuzzles.some(id => { const p = PUZZLES.find(pz => pz.id === id); return p && p.d === 4; }) },
+  { id: 'speed_easy', name: 'Speed Demon', desc: 'Complete Easy in under 3 min', coins: 100, icon: '\u{26A1}',
+    check: (d) => d.stats[1].best !== null && d.stats[1].best < 180 },
+  { id: 'all_easy', name: 'Easy Sweep', desc: 'Complete all Easy puzzles', coins: 300, icon: '\u{1F9F9}',
+    check: (d) => { const ids = PUZZLES.filter(p => p.d === 1).map(p => p.id); return ids.every(id => d.completedPuzzles.includes(id)); } },
+  { id: 'streak_3', name: 'On Fire', desc: '3-day streak', coins: 75, icon: '\u{1F525}',
+    check: (d) => d.streak.current >= 3 },
+  { id: 'streak_7', name: 'Week Warrior', desc: '7-day streak', coins: 200, icon: '\u{1F4AA}',
+    check: (d) => d.streak.current >= 7 },
+  { id: 'streak_10', name: 'Unstoppable', desc: '10-day streak', coins: 500, icon: '\u{1F680}',
+    check: (d) => d.streak.current >= 10 }
+];
+
+// ==================== CASINO HELPERS ====================
+function todayStr() {
+  return new Date().toLocaleDateString('en-CA');
+}
+
+function yesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toLocaleDateString('en-CA');
+}
+
+function calculateCoinReward(difficulty, timeSeconds, multiplier) {
+  const base = COIN_BASE[difficulty] || 10;
+  const par = COIN_PAR[difficulty] || 300;
+  let timeBonus = 0;
+  if (timeSeconds < par) {
+    timeBonus = Math.min(Math.floor((par - timeSeconds) / 10), base * 2);
+  }
+  return { base, timeBonus, multiplier, total: Math.floor((base + timeBonus) * multiplier) };
+}
+
+// ==================== STREAK MANAGER ====================
+const StreakManager = {
+  getMultiplier(current) {
+    if (current >= 7) return 3;
+    if (current >= 4) return 2;
+    if (current >= 2) return 1.5;
+    return 1;
+  },
+
+  updateOnPlay(data) {
+    const today = todayStr();
+    const yesterday = yesterdayStr();
+    if (data.streak.lastPlayDate === today) return;
+    if (data.streak.lastPlayDate === yesterday) {
+      data.streak.current++;
+    } else if (data.streak.lastPlayDate) {
+      if (data.streak.shielded) {
+        data.streak.shielded = false;
+      } else {
+        data.streak.current = 1;
+      }
+    } else {
+      data.streak.current = 1;
+    }
+    data.streak.lastPlayDate = today;
+    data.streak.multiplier = this.getMultiplier(data.streak.current);
+  }
+};
+
+// ==================== ACHIEVEMENT MANAGER ====================
+const AchievementManager = {
+  checkNew(data) {
+    const newOnes = [];
+    for (const a of ACHIEVEMENTS) {
+      if (!data.unlockedAchievements.includes(a.id) && a.check(data)) {
+        newOnes.push(a);
+        data.unlockedAchievements.push(a.id);
+      }
+    }
+    return newOnes;
+  }
+};
+
+// ==================== SPIN WHEEL ====================
+const SpinWheel = {
+  isAvailable(data) {
+    return data.lastSpinDate !== todayStr();
+  },
+
+  drawWheel(canvas) {
+    const ctx = canvas.getContext('2d');
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const r = cx - 4;
+    const segAngle = (Math.PI * 2) / SPIN_SEGMENTS.length;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < SPIN_SEGMENTS.length; i++) {
+      const seg = SPIN_SEGMENTS[i];
+      const startAngle = i * segAngle - Math.PI / 2;
+      const endAngle = startAngle + segAngle;
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = seg.color;
+      ctx.fill();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(startAngle + segAngle / 2);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillText(seg.label, r * 0.6, 0);
+      ctx.restore();
+    }
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, 16, 0, Math.PI * 2);
+    ctx.fillStyle = '#333';
+    ctx.fill();
+  },
+
+  spin(canvas, callback) {
+    const segAngle = 360 / SPIN_SEGMENTS.length;
+    const winIndex = Math.floor(Math.random() * SPIN_SEGMENTS.length);
+    const targetAngle = 360 - (winIndex * segAngle + segAngle / 2);
+    const totalRotation = 360 * 8 + targetAngle;
+
+    canvas.style.transition = 'none';
+    canvas.style.transform = 'rotate(0deg)';
+    canvas.offsetHeight;
+    canvas.style.transition = 'transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99)';
+    canvas.style.transform = `rotate(${totalRotation}deg)`;
+
+    const handler = () => {
+      canvas.removeEventListener('transitionend', handler);
+      callback(SPIN_SEGMENTS[winIndex]);
+    };
+    canvas.addEventListener('transitionend', handler);
+  },
+
+  applyReward(segment, data) {
+    if (segment.type === 'coins') {
+      data.coins += segment.value;
+    } else if (segment.type === 'streak_shield') {
+      data.streak.shielded = true;
+    } else if (segment.type === 'multiplier_boost') {
+      data.streak.multiplier = Math.max(data.streak.multiplier, segment.value);
+    }
+    data.lastSpinDate = todayStr();
+  }
+};
+
+// ==================== SCRATCH CARD ====================
+const ScratchCard = {
+  currentTier: null,
+  currentGrid: null,
+  revealedCount: 0,
+  bonus: 0,
+
+  pickTier() {
+    const roll = Math.random() * 100;
+    if (roll < SCRATCH_TIERS.gold.weight) return 'gold';
+    if (roll < SCRATCH_TIERS.gold.weight + SCRATCH_TIERS.silver.weight) return 'silver';
+    return 'bronze';
+  },
+
+  generate(tierKey) {
+    const tier = SCRATCH_TIERS[tierKey];
+    this.currentTier = tierKey;
+    this.revealedCount = 0;
+    this.bonus = 0;
+
+    const grid = [];
+    const isWinner = Math.random() < 0.3;
+
+    if (isWinner) {
+      const winSymbol = tier.symbols[Math.floor(Math.random() * tier.symbols.length)];
+      const positions = [];
+      while (positions.length < 3) {
+        const p = Math.floor(Math.random() * 9);
+        if (!positions.includes(p)) positions.push(p);
+      }
+      for (let i = 0; i < 9; i++) {
+        if (positions.includes(i)) {
+          grid.push(winSymbol);
+        } else {
+          const others = tier.symbols.filter(s => s !== winSymbol);
+          grid.push(others[Math.floor(Math.random() * others.length)]);
+        }
+      }
+    } else {
+      for (let i = 0; i < 9; i++) {
+        grid.push(tier.symbols[Math.floor(Math.random() * tier.symbols.length)]);
+      }
+      const counts = {};
+      for (const s of grid) counts[s] = (counts[s] || 0) + 1;
+      if (Object.values(counts).some(c => c >= 3)) {
+        const mostCommon = Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
+        let replaced = 0;
+        for (let i = 0; i < 9 && counts[mostCommon] >= 3; i++) {
+          if (grid[i] === mostCommon && replaced === 0) {
+            const others = tier.symbols.filter(s => s !== mostCommon);
+            grid[i] = others[Math.floor(Math.random() * others.length)];
+            counts[mostCommon]--;
+            replaced++;
+          }
+        }
+      }
+    }
+    this.currentGrid = grid;
+    return grid;
+  },
+
+  show(tierKey) {
+    const tier = SCRATCH_TIERS[tierKey];
+    const grid = this.generate(tierKey);
+    const container = document.getElementById('scratch-grid');
+    const tierLabel = document.getElementById('scratch-tier-label');
+    const hint = document.getElementById('scratch-hint');
+    const result = document.getElementById('scratch-result');
+    const collectBtn = document.getElementById('btn-scratch-collect');
+
+    tierLabel.textContent = tier.name;
+    tierLabel.className = 'scratch-tier-label ' + tierKey;
+    hint.textContent = 'Scratch to reveal! Match 3 to win!';
+    result.className = 'scratch-result';
+    result.style.display = 'none';
+    collectBtn.className = 'btn-scratch-collect';
+
+    container.innerHTML = '';
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement('div');
+      cell.className = 'scratch-cell';
+
+      const symbol = document.createElement('div');
+      symbol.className = 'scratch-symbol';
+      symbol.textContent = grid[i];
+      cell.appendChild(symbol);
+
+      const canvas = document.createElement('canvas');
+      canvas.className = 'scratch-canvas';
+      canvas.width = 80;
+      canvas.height = 80;
+      cell.appendChild(canvas);
+
+      container.appendChild(cell);
+
+      const ctx = canvas.getContext('2d');
+      const gradient = ctx.createLinearGradient(0, 0, 80, 80);
+      if (tierKey === 'gold') {
+        gradient.addColorStop(0, '#FFD700');
+        gradient.addColorStop(1, '#B8860B');
+      } else if (tierKey === 'silver') {
+        gradient.addColorStop(0, '#E0E0E0');
+        gradient.addColorStop(1, '#9E9E9E');
+      } else {
+        gradient.addColorStop(0, '#CD7F32');
+        gradient.addColorStop(1, '#8B4513');
+      }
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 80, 80);
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('?', 40, 40);
+
+      this.bindScratch(canvas, cell, i);
+    }
+
+    document.getElementById('modal-scratch').classList.add('active');
+  },
+
+  bindScratch(canvas, cell, index) {
+    const ctx = canvas.getContext('2d');
+    let scratching = false;
+
+    const scratch = (x, y) => {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      const imageData = ctx.getImageData(0, 0, 80, 80);
+      let cleared = 0;
+      for (let i = 3; i < imageData.data.length; i += 4) {
+        if (imageData.data[i] === 0) cleared++;
+      }
+      const pct = cleared / (80 * 80);
+      if (pct > 0.4) {
+        this.revealCell(cell, index);
+      }
+    };
+
+    const getPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (80 / rect.width),
+        y: (e.clientY - rect.top) * (80 / rect.height)
+      };
+    };
+
+    canvas.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      scratching = true;
+      const pos = getPos(e);
+      scratch(pos.x, pos.y);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!scratching) return;
+      e.preventDefault();
+      const pos = getPos(e);
+      scratch(pos.x, pos.y);
+    });
+
+    const endScratch = () => { scratching = false; };
+    canvas.addEventListener('pointerup', endScratch);
+    canvas.addEventListener('pointercancel', endScratch);
+    canvas.addEventListener('pointerleave', endScratch);
+  },
+
+  revealCell(cell, index) {
+    if (cell.classList.contains('revealed')) return;
+    cell.classList.add('revealed');
+    this.revealedCount++;
+    if (this.revealedCount >= 9) {
+      this.evaluate();
+    }
+  },
+
+  evaluate() {
+    const tier = SCRATCH_TIERS[this.currentTier];
+    const counts = {};
+    for (const s of this.currentGrid) counts[s] = (counts[s] || 0) + 1;
+    const hasMatch = Object.values(counts).some(c => c >= 3);
+
+    const result = document.getElementById('scratch-result');
+    const collectBtn = document.getElementById('btn-scratch-collect');
+    const hint = document.getElementById('scratch-hint');
+    hint.textContent = '';
+
+    if (hasMatch) {
+      const matched = Object.entries(counts).find(([, c]) => c >= 3);
+      this.bonus = tier.payout;
+      result.textContent = `Match! +${tier.payout} coins!`;
+      result.className = 'scratch-result visible win';
+
+      const cells = document.querySelectorAll('#scratch-grid .scratch-cell');
+      this.currentGrid.forEach((sym, i) => {
+        if (sym === matched[0]) cells[i].classList.add('matched');
+      });
+    } else {
+      this.bonus = 2;
+      result.textContent = 'No match. +2 coins consolation.';
+      result.className = 'scratch-result visible lose';
+    }
+
+    collectBtn.className = 'btn-scratch-collect visible';
+  }
+};
+
+// ==================== JACKPOT ANIMATION ====================
+const JackpotAnimation = {
+  slotEmojis: ['\u{1F48E}', '\u{1F451}', '\u{2B50}', '\u{1F525}', '\u{1F3B0}', '\u{1F4B0}', '\u{1F3C6}', '\u{1F680}'],
+
+  show(achievement, callback) {
+    const modal = document.getElementById('modal-jackpot');
+    const nameEl = document.getElementById('jackpot-name');
+    const descEl = document.getElementById('jackpot-desc');
+    const coinsEl = document.getElementById('jackpot-coins');
+
+    nameEl.textContent = achievement.name;
+    descEl.textContent = achievement.desc;
+    coinsEl.textContent = `+${achievement.coins}`;
+
+    for (let r = 0; r < 3; r++) {
+      const strip = document.getElementById(`slot-strip-${r}`);
+      strip.innerHTML = '';
+      strip.style.transition = 'none';
+      strip.style.transform = 'translateY(0)';
+
+      const items = [];
+      for (let j = 0; j < 10; j++) {
+        items.push(this.slotEmojis[Math.floor(Math.random() * this.slotEmojis.length)]);
+      }
+      items.push(achievement.icon);
+      for (const emoji of items) {
+        const div = document.createElement('div');
+        div.className = 'slot-item';
+        div.textContent = emoji;
+        strip.appendChild(div);
+      }
+    }
+
+    modal.classList.add('active');
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        for (let r = 0; r < 3; r++) {
+          const strip = document.getElementById(`slot-strip-${r}`);
+          strip.style.transition = `transform ${2 + r * 0.5}s cubic-bezier(0.2, 0.8, 0.3, 1)`;
+          strip.style.transform = `translateY(-${10 * 64}px)`;
+        }
+      });
+    });
+
+    setTimeout(() => {
+      document.body.classList.add('shaking');
+      this.burstParticles(modal);
+      setTimeout(() => document.body.classList.remove('shaking'), 500);
+    }, 3000);
+
+    const collectBtn = document.getElementById('btn-jackpot-collect');
+    const handler = () => {
+      collectBtn.removeEventListener('click', handler);
+      modal.classList.remove('active');
+      if (callback) callback();
+    };
+    collectBtn.addEventListener('click', handler);
+  },
+
+  burstParticles(container) {
+    const rect = container.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const colors = ['#FFD700', '#FF6B35', '#f44336', '#9c27b0', '#4caf50', '#2196f3'];
+
+    for (let i = 0; i < 24; i++) {
+      const p = document.createElement('div');
+      p.className = 'particle';
+      const angle = (Math.PI * 2 * i) / 24;
+      const dist = 80 + Math.random() * 120;
+      p.style.left = cx + 'px';
+      p.style.top = cy + 'px';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.setProperty('--p-dx', Math.cos(angle) * dist + 'px');
+      p.style.setProperty('--p-dy', Math.sin(angle) * dist + 'px');
+      p.style.setProperty('--p-duration', (0.6 + Math.random() * 0.6) + 's');
+      document.body.appendChild(p);
+      p.addEventListener('animationend', () => p.remove());
+    }
+  }
+};
 
 // ==================== GAME ENGINE ====================
 class GameEngine {
@@ -971,13 +2167,26 @@ class Storage {
 
   static getSaveData() {
     const data = Storage.load() || {
-      version: 1,
+      version: 2,
       currentGame: null,
       completedPuzzles: [],
-      stats: { 1: { count: 0, best: null }, 2: { count: 0, best: null }, 3: { count: 0, best: null }, 4: { count: 0, best: null } }
+      stats: { 1: { count: 0, best: null }, 2: { count: 0, best: null }, 3: { count: 0, best: null }, 4: { count: 0, best: null } },
+      coins: 0,
+      streak: { current: 0, lastPlayDate: null, multiplier: 1, shielded: false },
+      lastSpinDate: null,
+      unlockedAchievements: [],
+      pendingJackpots: []
     };
     if (!data.stats) data.stats = { 1: { count: 0, best: null }, 2: { count: 0, best: null }, 3: { count: 0, best: null }, 4: { count: 0, best: null } };
     if (!data.completedPuzzles) data.completedPuzzles = [];
+    if (data.version !== 2) {
+      if (data.coins === undefined) data.coins = 0;
+      if (!data.streak) data.streak = { current: 0, lastPlayDate: null, multiplier: 1, shielded: false };
+      if (data.lastSpinDate === undefined) data.lastSpinDate = null;
+      if (!data.unlockedAchievements) data.unlockedAchievements = [];
+      if (!data.pendingJackpots) data.pendingJackpots = [];
+      data.version = 2;
+    }
     return data;
   }
 
@@ -1196,19 +2405,6 @@ class App {
       });
     });
 
-    document.getElementById('btn-next-puzzle').addEventListener('click', () => {
-      document.getElementById('modal-complete').classList.remove('active');
-      if (this.engine) {
-        this.startNewPuzzle(this.engine.difficulty, false);
-      }
-    });
-
-    document.getElementById('btn-modal-menu').addEventListener('click', () => {
-      document.getElementById('modal-complete').classList.remove('active');
-      this.showScreen('select');
-      this.updateLevelSelect();
-    });
-
     document.addEventListener('keydown', (e) => {
       if (!this.engine || document.getElementById('screen-game').style.display === 'none') return;
       if (document.getElementById('modal-complete').classList.contains('active')) return;
@@ -1242,6 +2438,109 @@ class App {
         this.startTimer();
       }
     });
+
+    // Daily Spin Wheel
+    document.getElementById('btn-daily-spin').addEventListener('click', () => {
+      const data = Storage.getSaveData();
+      if (!SpinWheel.isAvailable(data)) return;
+      const canvas = document.getElementById('spin-canvas');
+      SpinWheel.drawWheel(canvas);
+      canvas.style.transition = 'none';
+      canvas.style.transform = 'rotate(0deg)';
+      document.getElementById('spin-result').className = 'spin-result';
+      document.getElementById('btn-spin').style.display = '';
+      document.getElementById('btn-spin-collect').className = 'btn-spin-collect';
+      document.getElementById('modal-spin').classList.add('active');
+    });
+
+    document.getElementById('btn-spin').addEventListener('click', () => {
+      const canvas = document.getElementById('spin-canvas');
+      const btn = document.getElementById('btn-spin');
+      btn.style.display = 'none';
+
+      SpinWheel.spin(canvas, (segment) => {
+        const data = Storage.getSaveData();
+        SpinWheel.applyReward(segment, data);
+        Storage.save(data);
+
+        const resultEl = document.getElementById('spin-result');
+        if (segment.type === 'coins') {
+          resultEl.textContent = `+${segment.value} Coins!`;
+        } else if (segment.type === 'streak_shield') {
+          resultEl.textContent = 'Streak Shield activated!';
+        } else if (segment.type === 'multiplier_boost') {
+          resultEl.textContent = `${segment.value}x Multiplier Boost!`;
+        }
+        resultEl.className = 'spin-result visible';
+        document.getElementById('btn-spin-collect').className = 'btn-spin-collect visible';
+      });
+    });
+
+    document.getElementById('btn-spin-collect').addEventListener('click', () => {
+      document.getElementById('modal-spin').classList.remove('active');
+      this.updateLevelSelect();
+    });
+
+    // Scratch Card
+    document.getElementById('btn-scratch-collect').addEventListener('click', () => {
+      document.getElementById('modal-scratch').classList.remove('active');
+      const bonus = ScratchCard.bonus;
+      this._scratchBonus = bonus;
+      const data = Storage.getSaveData();
+      data.coins = (data.coins || 0) + bonus;
+      Storage.save(data);
+      this.showCompletionModal();
+    });
+
+    // Completion Modal (modified)
+    document.getElementById('btn-next-puzzle').addEventListener('click', () => {
+      document.getElementById('modal-complete').classList.remove('active');
+      this.showPendingJackpots();
+      if (this.engine) {
+        this.startNewPuzzle(this.engine.difficulty, false);
+      }
+    });
+
+    document.getElementById('btn-modal-menu').addEventListener('click', () => {
+      document.getElementById('modal-complete').classList.remove('active');
+      this.showPendingJackpots();
+      this.showScreen('select');
+      this.updateLevelSelect();
+    });
+
+    // Achievements
+    document.getElementById('btn-achievements').addEventListener('click', () => {
+      this.showAchievements();
+    });
+
+    document.getElementById('btn-achievements-close').addEventListener('click', () => {
+      document.getElementById('modal-achievements').classList.remove('active');
+    });
+
+  }
+
+  showAchievements() {
+    const data = Storage.getSaveData();
+    const list = document.getElementById('achievements-list');
+    list.innerHTML = '';
+
+    for (const a of ACHIEVEMENTS) {
+      const unlocked = data.unlockedAchievements.includes(a.id);
+      const item = document.createElement('div');
+      item.className = 'achievement-item ' + (unlocked ? 'unlocked' : 'locked');
+
+      item.innerHTML = `
+        <div class="achievement-icon">${unlocked ? a.icon : '\u{1F512}'}</div>
+        <div class="achievement-details">
+          <div class="achievement-name">${a.name}</div>
+          <div class="achievement-desc">${a.desc}</div>
+        </div>
+        <div class="achievement-reward">${unlocked ? '\u{2705}' : '+' + a.coins}</div>
+      `;
+      list.appendChild(item);
+    }
+
+    document.getElementById('modal-achievements').classList.add('active');
   }
 
   moveSelection(key) {
@@ -1295,6 +2594,7 @@ class App {
     this.updateHistoryBtns();
     this.updateNumpadCounts();
     this.startTimer();
+    this.updateCoinDisplay();
 
     const label = document.getElementById('game-diff-label');
     label.textContent = DIFF_NAMES[this.engine.difficulty];
@@ -1422,7 +2722,25 @@ class App {
 
   onComplete() {
     this.stopTimer();
+    const data = Storage.getSaveData();
+
+    StreakManager.updateOnPlay(data);
+
+    const reward = calculateCoinReward(this.engine.difficulty, this.engine.timerSeconds, data.streak.multiplier);
+
     Storage.markCompleted(this.engine.puzzleId, this.engine.difficulty, this.engine.timerSeconds);
+
+    const freshData = Storage.getSaveData();
+    freshData.streak = data.streak;
+    freshData.coins = (freshData.coins || 0) + reward.total;
+
+    const newAchievements = AchievementManager.checkNew(freshData);
+    for (const a of newAchievements) {
+      freshData.coins += a.coins;
+      freshData.pendingJackpots.push(a.id);
+    }
+
+    Storage.save(freshData);
 
     const s = this.engine.timerSeconds;
     const m = Math.floor(s / 60);
@@ -1438,7 +2756,71 @@ class App {
       DIFF_NAMES[this.engine.difficulty] + ' puzzle completed. ' +
       messages[Math.floor(Math.random() * messages.length)];
 
+    this._completionReward = reward;
+    this._completionAchievements = newAchievements;
+    this._scratchBonus = 0;
+
+    const tierKey = ScratchCard.pickTier();
+    ScratchCard.show(tierKey);
+  }
+
+  showCompletionModal() {
+    const reward = this._completionReward;
+    document.getElementById('earn-base').textContent = '+' + reward.base;
+    document.getElementById('earn-time').textContent = '+' + reward.timeBonus;
+    document.getElementById('earn-mult').textContent = reward.multiplier + 'x';
+    document.getElementById('earn-scratch').textContent = '+' + this._scratchBonus;
+    document.getElementById('earn-total').textContent = '+' + (reward.total + this._scratchBonus);
+
     document.getElementById('modal-complete').classList.add('active');
+    this.updateCoinDisplay();
+  }
+
+  showPendingJackpots() {
+    const achievements = this._completionAchievements;
+    if (!achievements || achievements.length === 0) return;
+
+    const showNext = (index) => {
+      if (index >= achievements.length) {
+        const data = Storage.getSaveData();
+        data.pendingJackpots = [];
+        Storage.save(data);
+        return;
+      }
+      JackpotAnimation.show(achievements[index], () => showNext(index + 1));
+    };
+    showNext(0);
+  }
+
+  animateCoins(count, fromEl) {
+    const toEl = document.getElementById('coin-display-game') || document.getElementById('coin-display-select');
+    if (!fromEl || !toEl) return;
+
+    const fromRect = fromEl.getBoundingClientRect();
+    const toRect = toEl.getBoundingClientRect();
+    const num = Math.min(Math.max(count, 3), 12);
+
+    for (let i = 0; i < num; i++) {
+      const coin = document.createElement('div');
+      coin.className = 'flying-coin';
+      const startX = fromRect.left + fromRect.width / 2 + (Math.random() - 0.5) * 40;
+      const startY = fromRect.top + fromRect.height / 2 + (Math.random() - 0.5) * 40;
+      coin.style.left = startX + 'px';
+      coin.style.top = startY + 'px';
+      coin.style.setProperty('--fly-dx', (toRect.left - startX) + 'px');
+      coin.style.setProperty('--fly-dy', (toRect.top - startY) + 'px');
+      coin.style.setProperty('--fly-duration', (0.5 + Math.random() * 0.4) + 's');
+      coin.style.animationDelay = (i * 0.06) + 's';
+      document.body.appendChild(coin);
+      coin.addEventListener('animationend', () => coin.remove());
+    }
+  }
+
+  updateCoinDisplay() {
+    const data = Storage.getSaveData();
+    const bal = data.coins || 0;
+    document.getElementById('coin-balance-select').textContent = bal;
+    document.getElementById('coin-balance-game').textContent = bal;
   }
 
   showScreen(name) {
@@ -1472,6 +2854,31 @@ class App {
         String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
     } else {
       card.classList.remove('visible');
+    }
+
+    this.updateCoinDisplay();
+
+    const streakCard = document.getElementById('streak-card');
+    if (data.streak.current > 0) {
+      streakCard.classList.add('visible');
+      document.getElementById('streak-count').textContent = data.streak.current + ' day streak';
+      const badge = document.getElementById('multiplier-badge');
+      const mult = data.streak.multiplier;
+      badge.textContent = mult + 'x';
+      badge.className = 'multiplier-badge ' + (mult >= 3 ? 'x3' : mult >= 2 ? 'x2' : mult >= 1.5 ? 'x1-5' : 'x1');
+    } else {
+      streakCard.classList.remove('visible');
+    }
+
+    const spinBtn = document.getElementById('btn-daily-spin');
+    if (SpinWheel.isAvailable(data)) {
+      spinBtn.className = 'btn-daily-spin available';
+      spinBtn.textContent = '\u{1F3B0} Daily Spin';
+      spinBtn.disabled = false;
+    } else {
+      spinBtn.className = 'btn-daily-spin used';
+      spinBtn.textContent = '\u{1F3B0} Spin used today';
+      spinBtn.disabled = true;
     }
   }
 }
